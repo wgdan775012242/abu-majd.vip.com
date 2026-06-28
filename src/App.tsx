@@ -64,7 +64,7 @@ interface SignaturePadProps {
 const SignaturePad = ({ label, onSave, onClear, savedDataUrl, language }: SignaturePadProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-see
+
   // Initialize and load saved drawing
   useEffect(() => {
     const canvas = canvasRef.current;
