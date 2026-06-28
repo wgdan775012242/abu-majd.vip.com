@@ -1,0 +1,6 @@
+{
+  "name": "Abu Majd Travel Assistant",
+  "description": "An intelligent travel and tourism assistant for Abu Majd Al-Haddad Office, offering flight bookings, visa assistance, and customer support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
