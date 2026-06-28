@@ -1540,7 +1540,7 @@ export default function App() {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
       if (apiKey) {
-        // الاتصال المباشر بـ Gemini في حال وجود المتغير البيئي (مفيد لمنصة Render كـ Static Site)
+        // Direct call to Gemini API if the environment variable is present (for Render static hosting)
         const systemInstructionText = `معلومات أبو مجد الحداد للسفريات:
 - الهاتف: +967775012242
 - البريد الإلكتروني: what775012242@outlook.sa
@@ -1569,17 +1569,37 @@ export default function App() {
           ]
         };
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
+        const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest"];
+        let data: any = null;
+        let success = false;
+        let lastErrorMsg = "";
 
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error?.message || "فشل الاتصال بـ Gemini API");
+        for (const model of modelsToTry) {
+          try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(payload)
+            });
+
+            data = await response.json();
+            if (response.ok) {
+              success = true;
+              break;
+            } else {
+              lastErrorMsg = data.error?.message || "فشل الاتصال بـ Gemini API";
+              console.warn(`Model ${model} failed:`, lastErrorMsg);
+            }
+          } catch (e: any) {
+            lastErrorMsg = e.message;
+            console.warn(`Fetch error for ${model}:`, e);
+          }
+        }
+
+        if (!success) {
+          throw new Error(lastErrorMsg || "فشل الاتصال بـ Gemini API بعد تجربة عدة نماذج.");
         }
 
         const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، لم أتمكن من توليد رد.";
@@ -1626,25 +1646,6 @@ export default function App() {
       setIsLoading(false);
     }
   };
-
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const copyContact = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedText(label);
-    setTimeout(() => setCopiedText(null), 2000);
-  };
-
-  const handleMofaQuerySubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!mofaAppNumber.trim() || !mofaPassportNumber.trim()) return;
-
-    setMofaLoading(true);
-    setMofaResult(null);
 
     // Simulate connection to MOFA API & document check
     setTimeout(() => {
