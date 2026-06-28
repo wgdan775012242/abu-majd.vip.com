@@ -1,38 +1,22 @@
-{
-  "name": "react-example",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
-    "start": "node dist/server.cjs",
-    "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@google/genai": "^2.4.0",
-    "@tailwindcss/vite": "^4.1.14",
-    "@vitejs/plugin-react": "^5.0.4",
-    "axios": "^1.18.1",
-    "cheerio": "^1.2.0",
-    "dotenv": "^17.2.3",
-    "express": "^4.21.2",
-    "firebase": "^12.15.0",
-    "lucide-react": "^0.546.0",
-    "motion": "^12.23.24",
-    "react": "^19.0.1",
-    "react-dom": "^19.0.1",
-    "vite": "^6.2.3"
-  },
-  "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^22.14.0",
-    "autoprefixer": "^10.4.21",
-    "esbuild": "^0.25.0",
-    "tailwindcss": "^4.1.14",
-    "tsx": "^4.21.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.3"
-  }
-}
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection } from "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBQgw0DI-CHdaMUBOWrAEC7F--DrlpVNBE",
+  authDomain: "abu-majd-vip.firebaseapp.com",
+  projectId: "abu-majd-vip",
+  storageBucket: "abu-majd-vip.firebasestorage.app",
+  messagingSenderId: "1036169106035",
+  appId: "1:1036169106035:web:60e2464a01add8eb859006",
+  measurementId: "G-MLZ1JC7CDH"
+};
+
+// تهيئة تطبيق فايربيس
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// تحديد المجموعات (جداول قاعدة البيانات)
+const jobsCollection = collection(db, "jobs");
+const marketCollection = collection(db, "marketAds");
+
+export { db, jobsCollection, marketCollection };
