@@ -397,3 +397,25 @@ async function startServer() {
       res.status(500).json({ error: "فشل تمديد الإعلان" });
     }
   });
+    // إعدادات عرض الموقع بعد البناء
+  if (process.env.NODE_ENV === "production") {
+    app.use(express.static(path.resolve(__dirname, "../dist")));
+    app.get("*", (req, res) => {
+      res.sendFile(path.resolve(__dirname, "../dist/index.html"));
+    });
+  } else {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  }
+
+  // تشغيل السيرفر
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
+
+startServer();
+
