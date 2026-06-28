@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@google/genai": "latest",
+    "@tailwindcss/vite": "latest",
     "axios": "^1.7.9",
     "cheerio": "^1.0.0",
     "clsx": "^2.1.1",
