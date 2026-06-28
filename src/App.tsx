@@ -1369,32 +1369,46 @@ export default function App() {
     }
 
     setAdPublishError(null);
-    try {
-      const response = await fetch("/api/jobs", {
+        try {
+      // الاتصال المباشر بقاعدة بيانات فايربيس abu-majd-vip
+      const response = await fetch("https://firestore.googleapis.com/v1/projects/abu-majd-vip/databases/(default)/documents/jobs", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          type: jobsSubTab === "seekers" ? "seeker" : "employer",
-          name: newAdForm.name,
-          phone: newAdForm.phone,
-          specialty: newAdForm.specialty,
-          country: newAdForm.country,
-          details: newAdForm.details,
-          salary: newAdForm.salary,
-          experience: newAdForm.experience,
-          image: newAdForm.image || undefined
+          fields: {
+            type: { stringValue: jobsSubTab === "seekers" ? "seeker" : "employer" },
+            name: { stringValue: newAdForm.name },
+            phone: { stringValue: newAdForm.phone },
+            specialty: { stringValue: newAdForm.specialty || "" },
+            country: { stringValue: newAdForm.country || "" },
+            details: { stringValue: newAdForm.details || "" },
+            salary: { stringValue: newAdForm.salary || "" },
+            experience: { stringValue: newAdForm.experience || "" },
+            image: { stringValue: newAdForm.image || "" },
+            createdAt: { timestampValue: new Date().toISOString() }
+          }
         })
       });
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "فشل نشر الإعلان");
+        throw new Error("فشل نشر الإعلان في فايربيس");
       }
 
-      setJobAds(prev => [data, ...prev]);
+      // إضافة الإعلان للقائمة محلياً وتأكيد النجاح
+      setJobAds(prev => [
+        { 
+          id: data.name.split('/').pop(), 
+          ...newAdForm, 
+          type: jobsSubTab === "seekers" ? "seeker" : "employer",
+          createdAt: new Date().toISOString()
+        }, 
+        ...prev
+      ]);
       setAdPublishSuccess(true);
+
       
       // Reset form fields
       setNewAdForm({
