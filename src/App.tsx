@@ -1502,7 +1502,7 @@ export default function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
-
+ 
   const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputText;
     if (!text.trim() || isLoading) return;
@@ -1537,30 +1537,88 @@ export default function App() {
           text: msg.text
         }));
 
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message: text,
-          history: history
-        })
-      });
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "فشل الاتصال بالخادم الذكي");
+      if (apiKey) {
+        // Direct call to Gemini API if the environment variable is present (for Render static hosting)
+        const systemInstructionText = `معلومات أبو مجد الحداد للسفريات:
+- الهاتف: +967775012242
+- البريد الإلكتروني: what775012242@outlook.sa
+- فيسبوك: ابومجد الحداد خدمات سفريات وسياحه
+- إنستغرام: وجدان الحداد-ابومجدالحداد
+- الخدمات: تأشيرات، حجوزات طيران، خدمات سياحية، وسفر.
+
+بصفتك مساعداً ذكياً لأبو مجد الحداد للسفريات والخدمات السياحية، أجب على رسالة المستخدم بصورة مهنية وودية للغاية وباللغة العربية.
+أنت تدعم أيضاً توجيه المستخدمين لروابط التوظيف السعودية الهامة وتذاكر الطيران، كن مختصراً ومفيداً في إجاباتك.`;
+
+        const formattedHistory = history.map((msg: any) => ({
+          role: msg.role === "user" ? "user" : "model",
+          parts: [{ text: msg.text }]
+        }));
+
+        const payload = {
+          system_instruction: {
+            parts: { text: systemInstructionText }
+          },
+          contents: [
+            ...formattedHistory,
+            {
+              role: "user",
+              parts: [{ text: text }]
+            }
+          ]
+        };
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error?.message || "فشل الاتصال بـ Gemini API");
+        }
+
+        const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، لم أتمكن من توليد رد.";
+        
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "model",
+          text: replyText,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, aiMessage]);
+
+      } else {
+        // Fallback to the backend API if no VITE_GEMINI_API_KEY is found
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: text,
+            history: history
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "فشل الاتصال بالخادم الذكي");
+        }
+
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "model",
+          text: data.reply,
+          timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
       }
-
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "model",
-        text: data.reply,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "عذراً، لم نتمكن من الاتصال بالخادم الذكي حالياً. يرجى التحقق من إعداد مفتاح GEMINI_API_KEY.");
@@ -1568,52 +1626,6 @@ export default function App() {
       setIsLoading(false);
     }
   };
-
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const copyContact = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedText(label);
-    setTimeout(() => setCopiedText(null), 2000);
-  };
-
-  const handleMofaQuerySubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!mofaAppNumber.trim() || !mofaPassportNumber.trim()) return;
-
-    setMofaLoading(true);
-    setMofaResult(null);
-
-    // Simulate connection to MOFA API & document check
-    setTimeout(() => {
-      setMofaLoading(false);
-      setMofaResult({
-        appNumber: mofaAppNumber,
-        passportNumber: mofaPassportNumber,
-        visaType: mofaVisaType,
-        statusText: "قيد الدراسة والمراجعة في القسم القنصلي",
-        subStatus: "تم التحقق من سداد الرسوم والربط بالتأمين الصحي بنجاح.",
-        timestamp: new Date().toLocaleDateString("ar-YE", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-        steps: [
-          { name: "تقديم الطلب وتسجيله إلكترونياً", status: "completed", date: "تمت بنجاح" },
-          { name: "سداد الرسوم وتفعيل التأمين الطبي المعتمد", status: "completed", date: "تم الدفع والربط" },
-          { name: "التدقيق والمطابقة لدى الممثلية / السفارة", status: "active", date: "قيد المراجعة الفنية" },
-          { name: "تصدير وطباعة التأشيرة على الجواز", status: "pending", date: "بانتظار الموافقة" }
-        ]
-      });
-    }, 1500);
-  };
-
-  // Help format simple markdown like bold and lists for display
-  const renderMessageText = (text: string, isUser: boolean) => {
-    return text.split("\n").map((line, lineIdx) => {
-      // Check for bullet points
-      const isBullet = line.trim().startsWith("- ") || line.trim().startsWith("* ");
-      const cleanLine = isBullet ? line.replace(/^[-*]\s+/, "") : line;
 
       // Simple bold replacement (**text**)
       const parts = cleanLine.split(/\*\*([\s\S]*?)\*\*/g);
