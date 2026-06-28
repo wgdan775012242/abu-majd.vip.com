@@ -1502,8 +1502,8 @@ export default function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
- 
-  const handleSendMessage = async (textToSend?: string) => {
+
+    const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputText;
     if (!text.trim() || isLoading) return;
 
